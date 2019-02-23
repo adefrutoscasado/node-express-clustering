@@ -1,9 +1,12 @@
 {
   "name": "node-clustering",
   "version": "0.0.0",
-  "private": true,
+  "private": false,
   "scripts": {
-    "start": "node ./bin/www"
+    "start-multicore": "node ./bin/www --multicore=true",
+    "start-singlecore": "node ./bin/www --multicore=false",
+    "test-cascade": "node test/cascadeRequest.js --requestnumber=20",
+    "test-parallel": "node test/parallelRequest.js --requestnumber=20"
   },
   "engines": {
     "node": "10.14.0",
@@ -15,7 +18,8 @@
     "debug": "~2.6.9",
     "express": "~4.16.0",
     "jimp": "^0.6.0",
-    "morgan": "~1.9.0"
+    "morgan": "~1.9.0",
+    "yargs": "^13.2.1"
   },
   "devDependencies": {
     "eslint": "^5.14.1",

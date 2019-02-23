@@ -4,7 +4,7 @@ const router = express.Router();
 
 const { index } = require('./../src/controllers/indexController');
 
-/* GET home page. */
+/* GET '/' */
 router.route('/').get(
   index,
 );

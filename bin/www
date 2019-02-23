@@ -1,40 +1,57 @@
 #!/usr/bin/env node
+const cluster = require('cluster');
+const { cpus } = require('os');
+const log = require('./../src/modules/log');
+const { argv } = require('yargs');
 
-/**
- * Module dependencies.
- */
+let { isMaster } = cluster;
+const numWorkers = cpus().length;
 
-var app = require('../app');
-var debug = require('debug')('node-clustering:server');
-var http = require('http');
+const app = require('../app');
+const debug = require('debug')('node-clustering:server');
+const http = require('http');
 
-/**
- * Get port from environment and store in Express.
- */
+const multicore = argv.multicore === 'true';
 
-var port = normalizePort(process.env.PORT || '3000');
-app.set('port', port);
+if (isMaster && multicore) {
+  log(`Forking ${numWorkers} workers`);
+  const workers = [...Array(numWorkers)].map(_ => cluster.fork());
 
-/**
- * Create HTTP server.
- */
+  cluster.on('online', worker => log(`Worker ${worker.process.pid} is online`));
+  cluster.on('exit', (worker, exitCode) => {
+    log(`Worker ${worker.process.id} exited with code ${exitCode}`);
+    log('Starting a new worker');
+    cluster.fork();
+  });
+} else {
+  /**
+   * Get port from environment and store in Express.
+   */
 
-var server = http.createServer(app);
+  const port = normalizePort(process.env.PORT || '3000');
+  app.set('port', port);
 
-/**
- * Listen on provided port, on all network interfaces.
- */
+  /**
+   * Create HTTP server.
+   */
 
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
+  var server = http.createServer(app);
+
+  /**
+   * Listen on provided port, on all network interfaces.
+   */
+
+  server.listen(port);
+  server.on('error', onError);
+  server.on('listening', onListening);
+}
 
 /**
  * Normalize a port into a number, string, or false.
  */
 
 function normalizePort(val) {
-  var port = parseInt(val, 10);
+  const port = parseInt(val, 10);
 
   if (isNaN(port)) {
     // named pipe
@@ -50,7 +67,7 @@ function normalizePort(val) {
 }
 
 /**
- * Event listener for HTTP server "error" event.
+ * Event listener for HTTP server 'error' event.
  */
 
 function onError(error) {
@@ -58,9 +75,7 @@ function onError(error) {
     throw error;
   }
 
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
+  const bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
 
   // handle specific listen errors with friendly messages
   switch (error.code) {
@@ -78,13 +93,11 @@ function onError(error) {
 }
 
 /**
- * Event listener for HTTP server "listening" event.
+ * Event listener for HTTP server 'listening' event.
  */
 
 function onListening() {
-  var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
+  const addr = server.address();
+  const bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
   console.log('Listening on ' + bind);
 }
